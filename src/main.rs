@@ -12,6 +12,7 @@ fn main() {
 
     for j in (0..IMAGE_HEIGHT).rev() {
         for i in 0..IMAGE_WIDTH {
+            eprint!("\rScanlines remaining: {:03}", j);
             let r = i as f64 / (IMAGE_WIDTH-1) as f64;
             let g = j as f64 / (IMAGE_HEIGHT-1) as f64;
             let b = 0.25;
@@ -23,4 +24,6 @@ fn main() {
             println!("{} {} {}", ir, ig, ib);
         }
     }
+
+    eprint!("\nDone.\n");
 }
