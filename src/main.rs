@@ -1,5 +1,7 @@
 
 
+mod vec3;
+
 fn main() {
     // Image
 
