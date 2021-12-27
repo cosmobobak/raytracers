@@ -1,6 +1,10 @@
+use crate::{vec3::Color, color::write_color};
+
 
 
 mod vec3;
+mod color;
+mod ray;
 
 fn main() {
     // Image
@@ -15,15 +19,12 @@ fn main() {
     for j in (0..IMAGE_HEIGHT).rev() {
         for i in 0..IMAGE_WIDTH {
             eprint!("\rScanlines remaining: {:03}", j);
-            let r = i as f64 / (IMAGE_WIDTH-1) as f64;
-            let g = j as f64 / (IMAGE_HEIGHT-1) as f64;
-            let b = 0.25;
+            let pixel = Color::new(
+                i as f64 / (IMAGE_WIDTH-1) as f64,
+                j as f64 / (IMAGE_HEIGHT-1) as f64,
+                0.25);
 
-            let ir = (255.999 * r) as i32;
-            let ig = (255.999 * g) as i32;
-            let ib = (255.999 * b) as i32;
-
-            println!("{} {} {}", ir, ig, ib);
+            write_color(&mut std::io::stdout(), pixel);
         }
     }
 

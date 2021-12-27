@@ -1,36 +1,36 @@
 use std::{ops::{Index, IndexMut, Neg, Add, AddAssign, Mul, MulAssign, Div, DivAssign}, fmt::Display};
 
 #[derive(Copy, Clone, Debug)]
-struct Vec3 {
+pub struct Vec3 {
     e: [f64; 3],
 }
 
 impl Vec3 {
-    fn new(x: f64, y: f64, z: f64) -> Vec3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { e: [x, y, z] }
     }
 
-    fn x(&self) -> f64 {
+    pub fn x(&self) -> f64 {
         self.e[0]
     }
 
-    fn y(&self) -> f64 {
+    pub fn y(&self) -> f64 {
         self.e[1]
     }
 
-    fn z(&self) -> f64 {
+    pub fn z(&self) -> f64 {
         self.e[2]
     }
 
-    fn length_squared(&self) -> f64 {
+    pub fn length_squared(&self) -> f64 {
         self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2]
     }
 
-    fn length(&self) -> f64 {
+    pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
 
-    fn unit_vector(&self) -> Vec3 {
+    pub fn unit_vector(&self) -> Vec3 {
         *self / self.length()
     }
 }
@@ -97,6 +97,14 @@ impl Mul<f64> for Vec3 {
     }
 }
 
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+
+    fn mul(self, other: Vec3) -> Vec3 {
+        other * self
+    }
+}
+
 impl MulAssign<f64> for Vec3 {
     fn mul_assign(&mut self, other: f64) {
         *self = *self * other;
@@ -137,5 +145,5 @@ fn cross(u: &Vec3, v: &Vec3) -> Vec3 {
     }
 }
 
-type Color = Vec3;
-type Point3 = Vec3;
+pub type Color = Vec3;
+pub type Point3 = Vec3;
