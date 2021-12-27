@@ -1,4 +1,4 @@
-use std::{ops::{Index, IndexMut, Neg, Add, AddAssign, Mul, MulAssign, Div, DivAssign}, fmt::Display};
+use std::{ops::{Index, IndexMut, Neg, Add, AddAssign, Mul, MulAssign, Div, DivAssign, SubAssign, Sub}, fmt::Display};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vec3 {
@@ -80,6 +80,26 @@ impl Add for Vec3 {
 impl AddAssign for Vec3 {
     fn add_assign(&mut self, other: Vec3) {
         *self = *self + other;
+    }
+}
+
+impl Sub for Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, other: Vec3) -> Vec3 {
+        Vec3 {
+            e: [
+                self.e[0] - other.e[0],
+                self.e[1] - other.e[1],
+                self.e[2] - other.e[2],
+            ],
+        }
+    }
+}
+
+impl SubAssign for Vec3 {
+    fn sub_assign(&mut self, other: Vec3) {
+        *self = *self - other;
     }
 }
 
