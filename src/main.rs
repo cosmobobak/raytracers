@@ -1,31 +1,45 @@
-use vec3::dot;
-use std::io::Write;
+#![allow(dead_code, unused_imports)]
 
-use crate::{color::write_color, ray::Ray, vec3::{Color, Point3, Vec3}};
+use hittable::{HitRecord, Hittable};
+use rayon::prelude::*;
+use std::{f64::INFINITY, io::Write, pin::Pin, rc::Rc};
 
+use crate::{
+    camera::Camera,
+    color::write_color,
+    hittable_collection::HittableVec,
+    ray::Ray,
+    rtweekend::random_f64,
+    sphere::Sphere,
+    vec3::{Color, Point3, Vec3}, material::{Lambertian, Metal, Dielectric, Material},
+};
+
+mod camera;
 mod color;
+mod hittable;
+mod hittable_collection;
 mod ray;
+mod rtweekend;
+mod sphere;
 mod vec3;
+mod material;
 
-fn hits_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
-    let oc = r.origin() - *center;
-    let a = r.direction().length_squared();
-    let half_b = dot(&oc, &r.direction());
-    let c = oc.length_squared() - radius*radius;
-    let discriminant = half_b*half_b - a*c;
-    if discriminant < 0.0 {
-        -1.0
-    } else {
-        (-half_b - discriminant.sqrt()) / a
-    }
-}
+fn ray_color(r: &Ray, world: &impl Hittable, depth: usize) -> Color {
+    const SPHERE_COEFF: f64 = 0.5;
 
-fn ray_color(r: &Ray) -> Color {
-    let t = hits_sphere(&Point3::new(0.0,0.0,-1.0), 0.5, r);
-    if t > 0.0 {
-        let n = (r.at(t) - Point3::new(0.0, 0.0, -1.0)).unit_vector();
-        return Color::new(n.x()+1.0, n.y()+1.0, n.z()+1.0) * 0.5;
+    // If we've hit the ray bounce limit, no more light is gathered.
+    if depth == 0 {
+        return Color::new(0.0, 0.0, 0.0);
     }
+
+    if let Some(rec) = world.hit(r, 0.001, INFINITY) {
+        if let Some((scattered, attenuation)) = rec.material.scatter(r, &rec) {
+            return attenuation * ray_color(&scattered, world, depth - 1);
+        } else {
+            return Color::new(0.0, 0.0, 0.0);
+        }
+    }
+
     let unit_direction = r.direction().unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
@@ -34,39 +48,57 @@ fn ray_color(r: &Ray) -> Color {
 fn main() {
     // Image
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 2400;
+    let image_width = 800;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
+    let samples_per_pixel = 1000;
+    let max_ray_bounces = 50;
+
+    // World
+    let mut world = HittableVec::new();
+
+    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let material_center = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2)));
+    let material_left   = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2)));
+    let material_right  = Rc::new(Metal::new(Color::new(0.4, 0.4, 0.2), 1.0));
+
+    world.add(Box::new(
+        Sphere::new(Point3::new( 0.0, -100.5, -1.0), 100.0, material_ground)));
+    world.add(Box::new(
+        Sphere::new(Point3::new( 0.0,    0.0, -2.0),   0.5, material_center)));
+    world.add(Box::new(
+        Sphere::new(Point3::new(-1.5,    0.0, -2.0),   0.5, material_left.clone())));
+    world.add(Box::new(
+        Sphere::new(Point3::new( 1.5,    0.0, -2.0),   0.5, material_right.clone())));
+    world.add(Box::new(
+        Sphere::new(Point3::new(-1.0,    1.0, -2.0),   0.5, material_left)));
+    world.add(Box::new(
+        Sphere::new(Point3::new( 1.0,    1.0, -2.0),   0.5, material_right)));
 
     // Camera
-
-    let viewport_height = 2.0;
-    let viewport_width = aspect_ratio * viewport_height;
-    let focal_length = 1.0;
-
-    let origin = Point3::new(0.0, 0.0, 0.0);
-    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
-    let vertical = Vec3::new(0.0, viewport_height, 0.0);
-    let lower_left_corner = origin - horizontal/2.0 - vertical/2.0 - Vec3::new(0.0, 0.0, focal_length);
+    let camera = Camera::new();
 
     // Render
 
     let outfile = std::fs::File::create("out.ppm").unwrap();
     let mut out = std::io::BufWriter::new(outfile);
 
-    writeln!(&mut out, "P3\n{} {}\n255", image_width, image_height).expect("write to stream failed");
+    writeln!(&mut out, "P3\n{} {}\n255", image_width, image_height)
+        .expect("write to stream failed");
 
     for j in (0..image_height).rev() {
-        eprint!("\rScanlines remaining: {:05}", j);
+        print!("\rScanlines remaining: {:05}", j);
         for i in 0..image_width {
-            
-            let u = i as f64 / (image_width-1) as f64;
-            let v = j as f64 / (image_height-1) as f64;
-            let r = Ray::new(origin, lower_left_corner + u*horizontal + v*vertical - origin);
-            let pixel_color = ray_color(&r);
+            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+            for _ in 0..samples_per_pixel {
+                let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
+                let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
+                let r = camera.get_ray(u, v);
+                pixel_color += ray_color(&r, &world, max_ray_bounces);
+            }
 
-            write_color(&mut out, pixel_color);
+            write_color(&mut out, pixel_color, samples_per_pixel);
         }
     }
 
-    eprint!("\nDone.\n");
+    print!("\nDone.\n");
 }
