@@ -1,4 +1,4 @@
-use crate::{vec3::Color, rtweekend::clamp};
+use crate::{vec::Color, rtweekend::clamp};
 use std::io::Write;
 
 pub fn write_color<W: Write>(stream: &mut W, pixel_color: Color, samples_per_pixel: u32) {

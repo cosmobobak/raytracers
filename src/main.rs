@@ -11,7 +11,7 @@ use crate::{
     ray::Ray,
     rtweekend::random_f64,
     sphere::Sphere,
-    vec3::{Color, Point3, Vec3}, material::{Lambertian, Metal, Dielectric, Material},
+    vec::{Color, Point4, Vec4}, material::{Lambertian, Metal, Dielectric, Material},
 };
 
 mod camera;
@@ -21,7 +21,7 @@ mod hittable_collection;
 mod ray;
 mod rtweekend;
 mod sphere;
-mod vec3;
+mod vec;
 mod material;
 
 fn ray_color(r: &Ray, world: &impl Hittable, depth: usize) -> Color {
@@ -29,20 +29,20 @@ fn ray_color(r: &Ray, world: &impl Hittable, depth: usize) -> Color {
 
     // If we've hit the ray bounce limit, no more light is gathered.
     if depth == 0 {
-        return Color::new(0.0, 0.0, 0.0);
+        return Color::new(0.0, 0.0, 0.0, 0.0);
     }
 
     if let Some(rec) = world.hit(r, 0.001, INFINITY) {
         if let Some((scattered, attenuation)) = rec.material.scatter(r, &rec) {
             return attenuation * ray_color(&scattered, world, depth - 1);
         } else {
-            return Color::new(0.0, 0.0, 0.0);
+            return Color::new(0.0, 0.0, 0.0, 0.0);
         }
     }
 
     let unit_direction = r.direction().unit_vector();
     let t = 0.5 * (unit_direction.y() + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+    (1.0 - t) * Color::new(1.0, 1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0, 1.0)
 }
 
 fn main() {
@@ -56,23 +56,23 @@ fn main() {
     // World
     let mut world = HittableVec::new();
 
-    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let material_center = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2)));
-    let material_left   = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2)));
-    let material_right  = Rc::new(Metal::new(Color::new(0.4, 0.4, 0.2), 1.0));
+    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0, 0.0)));
+    let material_center = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2, 0.0)));
+    let material_left   = Rc::new(Lambertian::new(Color::new(0.2, 0.2, 0.2, 0.0)));
+    let material_right  = Rc::new(Metal::new(Color::new(0.4, 0.4, 0.2, 0.0), 1.0));
 
     world.add(Box::new(
-        Sphere::new(Point3::new( 0.0, -100.5, -1.0), 100.0, material_ground)));
+        Sphere::new(Point4::new( 0.0, -100.5, -1.0, 0.0), 100.0, material_ground)));
     world.add(Box::new(
-        Sphere::new(Point3::new( 0.0,    0.0, -2.0),   0.5, material_center)));
+        Sphere::new(Point4::new( 0.0,    0.0, -2.0, 0.0),   0.5, material_center)));
     world.add(Box::new(
-        Sphere::new(Point3::new(-1.5,    0.0, -2.0),   0.5, material_left.clone())));
+        Sphere::new(Point4::new(-1.5,    0.0, -2.0, 0.0),   0.5, material_left.clone())));
     world.add(Box::new(
-        Sphere::new(Point3::new( 1.5,    0.0, -2.0),   0.5, material_right.clone())));
+        Sphere::new(Point4::new( 1.5,    0.0, -2.0, 0.0),   0.5, material_right.clone())));
     world.add(Box::new(
-        Sphere::new(Point3::new(-1.0,    1.0, -2.0),   0.5, material_left)));
+        Sphere::new(Point4::new(-1.0,    1.0, -2.0, 0.0),   0.5, material_left)));
     world.add(Box::new(
-        Sphere::new(Point3::new( 1.0,    1.0, -2.0),   0.5, material_right)));
+        Sphere::new(Point4::new( 1.0,    1.0, -2.0, 0.0),   0.5, material_right)));
 
     // Camera
     let camera = Camera::new();
@@ -88,7 +88,7 @@ fn main() {
     for j in (0..image_height).rev() {
         print!("\rScanlines remaining: {:05}", j);
         for i in 0..image_width {
-            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+            let mut pixel_color = Color::new(0.0, 0.0, 0.0, 0.0);
             for _ in 0..samples_per_pixel {
                 let u = (i as f64 + random_f64()) / (image_width - 1) as f64;
                 let v = (j as f64 + random_f64()) / (image_height - 1) as f64;
