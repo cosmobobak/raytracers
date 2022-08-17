@@ -1,31 +1,36 @@
-use std::{ops::{Index, IndexMut, Neg, Add, AddAssign, Mul, MulAssign, Div, DivAssign, SubAssign, Sub}, fmt::Display};
+use std::{
+    fmt::Display,
+    iter::Sum,
+    ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
 use rand::Rng;
 
 #[derive(Copy, Clone, Debug)]
+#[allow(clippy::module_name_repetitions)]
 pub struct Vec3 {
     e: [f64; 3],
 }
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 { e: [x, y, z] }
+    pub const fn new(x: f64, y: f64, z: f64) -> Self {
+        Self { e: [x, y, z] }
     }
 
-    pub fn x(&self) -> f64 {
+    pub const fn x(&self) -> f64 {
         self.e[0]
     }
 
-    pub fn y(&self) -> f64 {
+    pub const fn y(&self) -> f64 {
         self.e[1]
     }
 
-    pub fn z(&self) -> f64 {
+    pub const fn z(&self) -> f64 {
         self.e[2]
     }
 
-    pub fn length_squared(&self) -> f64 {
-        self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2]
+    pub fn length_squared(self) -> f64 {
+        self.e.into_iter().map(|x| x * x).sum()
     }
 
     pub fn length(&self) -> f64 {
@@ -36,7 +41,7 @@ impl Vec3 {
         self / self.length()
     }
 
-    pub fn rgb(self) -> (f64, f64, f64) {
+    pub const fn rgb(self) -> (f64, f64, f64) {
         (self.e[0], self.e[1], self.e[2])
     }
 
@@ -73,33 +78,31 @@ impl Vec3 {
 
     pub fn near_zero(&self) -> bool {
         const EPSILON: f64 = 0.000_000_1;
-        self.e[0].abs() < EPSILON 
-        && self.e[1].abs() < EPSILON 
-        && self.e[2].abs() < EPSILON 
+        self.e[0].abs() < EPSILON && self.e[1].abs() < EPSILON && self.e[2].abs() < EPSILON
     }
 
-    pub fn dot(v1: Self, v2: Self) -> f64 {
-        v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+    pub fn dot(self, other: Self) -> f64 {
+        self.e.into_iter().zip(other.e).map(|(a, b)| a * b).sum()
     }
 
-    pub fn cross(u: Self, v: Self) -> Self {
+    pub fn cross(self, other: Self) -> Self {
         Self {
             e: [
-                u[1] * v[2] - u[2] * v[1],
-                u[2] * v[0] - u[0] * v[2],
-                u[0] * v[1] - u[1] * v[0],
+                self[1] * other[2] - self[2] * other[1],
+                self[2] * other[0] - self[0] * other[2],
+                self[0] * other[1] - self[1] * other[0],
             ],
         }
     }
 
-    pub fn reflect(v: Self, n: Self) -> Self {
-        v - 2.0 * Self::dot(v, n) * n
+    pub fn reflect(self, other: Self) -> Self {
+        self - 2.0 * Self::dot(self, other) * other
     }
 
-    pub fn refract(uv: Self, n: Self, etai_over_etat: f64) -> Self {
-        let cos_theta = f64::min(Self::dot(-uv, n), 1.0);
-        let r_out_perp =  etai_over_etat * (uv + cos_theta*n);
-        let r_out_parallel = -f64::sqrt(f64::abs(1.0 - r_out_perp.length_squared())) * n;
+    pub fn refract(self, other: Self, etai_over_etat: f64) -> Self {
+        let cos_theta = f64::min(Self::dot(-self, other), 1.0);
+        let r_out_perp = etai_over_etat * (self + cos_theta * other);
+        let r_out_parallel = -f64::sqrt(f64::abs(1.0 - r_out_perp.length_squared())) * other;
         r_out_perp + r_out_parallel
     }
 }
@@ -123,11 +126,7 @@ impl Neg for Vec3 {
 
     fn neg(self) -> Self {
         Self {
-            e: [
-                -self.e[0],
-                -self.e[1],
-                -self.e[2],
-            ],
+            e: [-self.e[0], -self.e[1], -self.e[2]],
         }
     }
 }
@@ -177,11 +176,7 @@ impl Mul<f64> for Vec3 {
 
     fn mul(self, other: f64) -> Self {
         Self {
-            e: [
-                self.e[0] * other,
-                self.e[1] * other,
-                self.e[2] * other,
-            ],
+            e: [self.e[0] * other, self.e[1] * other, self.e[2] * other],
         }
     }
 }
@@ -231,6 +226,15 @@ impl DivAssign<f64> for Vec3 {
 impl Display for Vec3 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "({}, {}, {})", self.e[0], self.e[1], self.e[2])
+    }
+}
+
+impl Sum for Vec3 {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Self>,
+    {
+        iter.fold(Self::new(0.0, 0.0, 0.0), |a, b| a + b)
     }
 }
 

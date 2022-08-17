@@ -1,16 +1,18 @@
-use std::rc::Rc;
+use crate::{
+    hittable::{HitRecord, Hittable},
+    material::Material,
+    ray::Ray,
+    vec::{Point3, Vec3},
+};
 
-use crate::{vec::{Point3, Vec3}, hittable::{Hittable, HitRecord}, ray::Ray, material::Material};
-
-
-pub struct Sphere {
+pub struct Sphere<'a> {
     center: Point3,
     radius: f64,
-    mat_ptr: Rc<dyn Material>,
+    mat_ptr: &'a dyn Material,
 }
 
-impl Sphere {
-    pub fn new(center: Point3, radius: f64, mat_ptr: Rc<dyn Material>) -> Self {
+impl<'a> Sphere<'a> {
+    pub fn new(center: Point3, radius: f64, mat_ptr: &'a dyn Material) -> Sphere<'a> {
         Self {
             center,
             radius,
@@ -19,20 +21,21 @@ impl Sphere {
     }
 }
 
-impl Hittable for Sphere {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+impl<'a> Hittable for Sphere<'a> {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord<'a>> {
         let oc = r.origin() - self.center;
         let a = r.direction().length_squared();
         let half_b = Vec3::dot(oc, r.direction());
-        let c = oc.length_squared() - self.radius*self.radius;
+        let c = oc.length_squared() - self.radius * self.radius;
 
-        let discriminant = half_b*half_b - a*c;
+        #[allow(clippy::suspicious_operation_groupings)]
+        let discriminant = half_b * half_b - a * c;
         if discriminant < 0.0 {
             return None;
         }
         let sqrtd = discriminant.sqrt();
 
-        // Find the nearest root that lies in 
+        // Find the nearest root that lies in
         // an acceptable range
         let mut root = (-half_b - sqrtd) / a;
         if root < t_min || root > t_max {
@@ -46,7 +49,7 @@ impl Hittable for Sphere {
         Some(HitRecord::new(
             p,
             root,
-            Rc::clone(&self.mat_ptr),
+            self.mat_ptr,
             r,
             (p - self.center) / self.radius,
         ))
