@@ -1,16 +1,16 @@
 use std::rc::Rc;
 
-use crate::{vec::{Point4, Vec4}, hittable::{Hittable, HitRecord}, ray::Ray, material::Material};
+use crate::{vec::{Point3, Vec3}, hittable::{Hittable, HitRecord}, ray::Ray, material::Material};
 
 
 pub struct Sphere {
-    center: Point4,
+    center: Point3,
     radius: f64,
     mat_ptr: Rc<dyn Material>,
 }
 
 impl Sphere {
-    pub fn new(center: Point4, radius: f64, mat_ptr: Rc<dyn Material>) -> Self {
+    pub fn new(center: Point3, radius: f64, mat_ptr: Rc<dyn Material>) -> Self {
         Self {
             center,
             radius,
@@ -23,7 +23,7 @@ impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let oc = r.origin() - self.center;
         let a = r.direction().length_squared();
-        let half_b = Vec4::dot(oc, r.direction());
+        let half_b = Vec3::dot(oc, r.direction());
         let c = oc.length_squared() - self.radius*self.radius;
 
         let discriminant = half_b*half_b - a*c;

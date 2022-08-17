@@ -1,4 +1,4 @@
-use crate::{hittable::{Hittable, HitRecord}, ray::Ray, vec::{Point4, Vec4}};
+use crate::{hittable::{Hittable, HitRecord}, ray::Ray, vec::{Point3, Vec3}};
 
 
 

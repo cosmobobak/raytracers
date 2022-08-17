@@ -1,27 +1,27 @@
-use crate::vec::{Point4, Vec4};
+use crate::vec::{Point3, Vec3};
 
 pub struct Ray {
-    orig: Point4,
-    dir: Vec4,
+    orig: Point3,
+    dir: Vec3,
 }
 
 impl Ray {
-    pub fn new(orig: Point4, dir: Vec4) -> Ray {
+    pub fn new(orig: Point3, dir: Vec3) -> Ray {
         Ray {
             orig,
             dir,
         }
     }
 
-    pub fn origin(&self) -> Point4 {
+    pub fn origin(&self) -> Point3 {
         self.orig
     }
 
-    pub fn direction(&self) -> Vec4 {
+    pub fn direction(&self) -> Vec3 {
         self.dir
     }
 
-    pub fn at(&self, t: f64) -> Point4 {
+    pub fn at(&self, t: f64) -> Point3 {
         self.orig + t * self.dir
     }
 }
