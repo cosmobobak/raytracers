@@ -24,12 +24,8 @@ impl Vec3 {
         self.e[2]
     }
 
-    pub fn w(&self) -> f64 {
-        self.e[3]
-    }
-
     pub fn length_squared(&self) -> f64 {
-        self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2] + self.e[3] * self.e[3]
+        self.e[0] * self.e[0] + self.e[1] * self.e[1] + self.e[2] * self.e[2]
     }
 
     pub fn length(&self) -> f64 {
@@ -83,7 +79,7 @@ impl Vec3 {
     }
 
     pub fn dot(v1: Self, v2: Self) -> f64 {
-        v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3]
+        v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
     }
 
     pub fn cross(u: Self, v: Self) -> Self {
