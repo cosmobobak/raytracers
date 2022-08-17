@@ -123,7 +123,5 @@ fn main() {
         }
     }
 
-    drop(world_owned);
-
     print!("\nDone.\n");
 }
