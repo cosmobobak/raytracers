@@ -62,36 +62,12 @@ fn main() {
     let material_left = Lambertian::new(Color::new(0.2, 0.2, 0.2));
     let material_right = Metal::new(Color::new(0.4, 0.4, 0.2), 1.0);
 
-    world.add(Box::new(Sphere::new(
-        Point3::new(0.0, -100.5, -1.0),
-        100.0,
-        &material_ground,
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new(0.0, 0.0, -2.0),
-        0.5,
-        &material_center,
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new(-1.5, 0.0, -2.0),
-        0.5,
-        &material_left,
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new(1.5, 0.0, -2.0),
-        0.5,
-        &material_right,
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new(-1.0, 1.0, -2.0),
-        0.5,
-        &material_left,
-    )));
-    world.add(Box::new(Sphere::new(
-        Point3::new(1.0, 1.0, -2.0),
-        0.5,
-        &material_right,
-    )));
+    world.add(Box::new(Sphere::new(Point3::new(0.0, -100.5, -1.0), 100.0, &material_ground)));
+    world.add(Box::new(Sphere::new(Point3::new(0.0, 0.0, -2.0), 0.5, &material_center)));
+    world.add(Box::new(Sphere::new(Point3::new(-1.5, 0.0, -2.0), 0.5, &material_left)));
+    world.add(Box::new(Sphere::new(Point3::new(1.5, 0.0, -2.0), 0.5, &material_right)));
+    world.add(Box::new(Sphere::new(Point3::new(-1.0, 1.0, -2.0), 0.5, &material_left)));
+    world.add(Box::new(Sphere::new(Point3::new(1.0, 1.0, -2.0), 0.5, &material_right)));
     let world_owned = world;
     let world = &world_owned;
 
@@ -103,8 +79,7 @@ fn main() {
     let outfile = std::fs::File::create("out.ppm").unwrap();
     let mut out = std::io::BufWriter::new(outfile);
 
-    writeln!(&mut out, "P3\n{image_width} {image_height}\n255")
-        .expect("write to stream failed");
+    writeln!(&mut out, "P3\n{image_width} {image_height}\n255").expect("write to stream failed");
 
     for j in (0..image_height).rev() {
         print!("\rScanlines remaining: {j:05}");

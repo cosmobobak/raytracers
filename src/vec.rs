@@ -125,9 +125,7 @@ impl Neg for Vec3 {
     type Output = Self;
 
     fn neg(self) -> Self {
-        Self {
-            e: [-self.e[0], -self.e[1], -self.e[2]],
-        }
+        Self { e: [-self.e[0], -self.e[1], -self.e[2]] }
     }
 }
 
@@ -135,13 +133,7 @@ impl Add for Vec3 {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Self {
-            e: [
-                self.e[0] + other.e[0],
-                self.e[1] + other.e[1],
-                self.e[2] + other.e[2],
-            ],
-        }
+        Self { e: [self.e[0] + other.e[0], self.e[1] + other.e[1], self.e[2] + other.e[2]] }
     }
 }
 
@@ -155,13 +147,7 @@ impl Sub for Vec3 {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Self {
-            e: [
-                self.e[0] - other.e[0],
-                self.e[1] - other.e[1],
-                self.e[2] - other.e[2],
-            ],
-        }
+        Self { e: [self.e[0] - other.e[0], self.e[1] - other.e[1], self.e[2] - other.e[2]] }
     }
 }
 
@@ -175,9 +161,7 @@ impl Mul<f64> for Vec3 {
     type Output = Self;
 
     fn mul(self, other: f64) -> Self {
-        Self {
-            e: [self.e[0] * other, self.e[1] * other, self.e[2] * other],
-        }
+        Self { e: [self.e[0] * other, self.e[1] * other, self.e[2] * other] }
     }
 }
 
@@ -199,13 +183,7 @@ impl Mul<Self> for Vec3 {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Self {
-            e: [
-                self.e[0] * other.e[0],
-                self.e[1] * other.e[1],
-                self.e[2] * other.e[2],
-            ],
-        }
+        Self { e: [self.e[0] * other.e[0], self.e[1] * other.e[1], self.e[2] * other.e[2]] }
     }
 }
 

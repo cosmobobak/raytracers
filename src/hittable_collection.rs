@@ -9,9 +9,7 @@ pub struct HittableVec<'a> {
 
 impl<'a> HittableVec<'a> {
     pub fn new() -> Self {
-        Self {
-            objects: Vec::new(),
-        }
+        Self { objects: Vec::new() }
     }
 
     pub fn add(&mut self, object: Box<dyn Hittable + 'a>) {

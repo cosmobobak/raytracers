@@ -13,11 +13,7 @@ pub struct Sphere<'a> {
 
 impl<'a> Sphere<'a> {
     pub fn new(center: Point3, radius: f64, mat_ptr: &'a dyn Material) -> Sphere<'a> {
-        Self {
-            center,
-            radius,
-            mat_ptr,
-        }
+        Self { center, radius, mat_ptr }
     }
 }
 
@@ -26,17 +22,16 @@ impl<'a> Hittable for Sphere<'a> {
         let oc = r.origin() - self.center;
         let a = r.direction().length_squared();
         let half_b = Vec3::dot(oc, r.direction());
-        let c = self.radius.mul_add(-self.radius, oc.length_squared());
+        let c = f64::mul_add(self.radius, -self.radius, oc.length_squared());
 
         #[allow(clippy::suspicious_operation_groupings)]
-        let discriminant = half_b.mul_add(half_b, -(a * c));
+        let discriminant = f64::mul_add(half_b, half_b, -(a * c));
         if discriminant < 0.0 {
             return None;
         }
         let sqrtd = discriminant.sqrt();
 
-        // Find the nearest root that lies in
-        // an acceptable range
+        // Find the nearest root that lies in an acceptable range
         let mut root = (-half_b - sqrtd) / a;
         if root < t_min || root > t_max {
             root = (-half_b + sqrtd) / a;
@@ -46,12 +41,6 @@ impl<'a> Hittable for Sphere<'a> {
         }
 
         let p = r.at(root);
-        Some(HitRecord::new(
-            p,
-            root,
-            self.mat_ptr,
-            r,
-            (p - self.center) / self.radius,
-        ))
+        Some(HitRecord::new(p, root, self.mat_ptr, r, (p - self.center) / self.radius))
     }
 }
