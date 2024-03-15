@@ -2,30 +2,29 @@ use crate::{
     hittable::{HitRecord, Hittable},
     material::Material,
     ray::Ray,
-    vec::{Point3, Vec3},
+    vec::{Point3, Vec3}, Float,
 };
 
 pub struct Sphere<'a> {
     center: Point3,
-    radius: f64,
+    radius: Float,
     mat_ptr: &'a dyn Material,
 }
 
 impl<'a> Sphere<'a> {
-    pub fn new(center: Point3, radius: f64, mat_ptr: &'a dyn Material) -> Sphere<'a> {
+    pub fn new(center: Point3, radius: Float, mat_ptr: &'a dyn Material) -> Sphere<'a> {
         Self { center, radius, mat_ptr }
     }
 }
 
 impl<'a> Hittable for Sphere<'a> {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord<'a>> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<HitRecord<'a>> {
         let oc = r.origin() - self.center;
         let a = r.direction().length_squared();
         let half_b = Vec3::dot(oc, r.direction());
-        let c = f64::mul_add(self.radius, -self.radius, oc.length_squared());
+        let c = Float::mul_add(self.radius, -self.radius, oc.length_squared());
 
-        #[allow(clippy::suspicious_operation_groupings)]
-        let discriminant = f64::mul_add(half_b, half_b, -(a * c));
+        let discriminant = Float::mul_add(half_b, half_b, -(a * c));
         if discriminant < 0.0 {
             return None;
         }
@@ -33,14 +32,18 @@ impl<'a> Hittable for Sphere<'a> {
 
         // Find the nearest root that lies in an acceptable range
         let mut root = (-half_b - sqrtd) / a;
-        if root < t_min || root > t_max {
+        if root <= t_min || t_max <= root {
             root = (-half_b + sqrtd) / a;
-            if root < t_min || root > t_max {
+            if root <= t_min || t_max <= root {
                 return None;
             }
         }
 
         let p = r.at(root);
-        Some(HitRecord::new(p, root, self.mat_ptr, r, (p - self.center) / self.radius))
+        let mut rec = HitRecord::new(p, root, self.mat_ptr, r, (p - self.center) / self.radius);
+        let outward_normal = (rec.p - self.center) / self.radius;
+        rec.set_face_normal(r, outward_normal);
+
+        Some(rec)
     }
 }

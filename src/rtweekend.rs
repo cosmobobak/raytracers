@@ -1,3 +1,3 @@
-pub fn random_f64() -> f64 {
-    rand::random::<f64>()
-}
+// pub fn random_f64() -> f64 {
+//     rand::random::<f64>()
+// }

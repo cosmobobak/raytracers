@@ -4,36 +4,38 @@ use std::{
     ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use rand::Rng;
+use rand::{rngs::ThreadRng, Rng};
+
+use crate::Float;
 
 #[derive(Copy, Clone, Debug)]
 #[allow(clippy::module_name_repetitions)]
 pub struct Vec3 {
-    e: [f64; 3],
+    e: [Float; 3],
 }
 
 impl Vec3 {
-    pub const fn new(x: f64, y: f64, z: f64) -> Self {
+    pub const fn new(x: Float, y: Float, z: Float) -> Self {
         Self { e: [x, y, z] }
     }
 
-    pub const fn x(&self) -> f64 {
+    pub const fn x(&self) -> Float {
         self.e[0]
     }
 
-    pub const fn y(&self) -> f64 {
+    pub const fn y(&self) -> Float {
         self.e[1]
     }
 
-    pub const fn z(&self) -> f64 {
+    pub const fn z(&self) -> Float {
         self.e[2]
     }
 
-    pub fn length_squared(self) -> f64 {
-        self.e.into_iter().map(|x| x * x).sum()
+    pub fn length_squared(self) -> Float {
+        self.e[2].mul_add(self.e[2], self.e[0].mul_add(self.e[0], self.e[1] * self.e[1]))
     }
 
-    pub fn length(&self) -> f64 {
+    pub fn length(&self) -> Float {
         self.length_squared().sqrt()
     }
 
@@ -41,29 +43,28 @@ impl Vec3 {
         self / self.length()
     }
 
-    pub const fn rgb(self) -> (f64, f64, f64) {
+    pub const fn rgb(self) -> (Float, Float, Float) {
         (self.e[0], self.e[1], self.e[2])
     }
 
-    pub fn random() -> Self {
-        let mut rng = rand::thread_rng();
-        let r1 = rng.gen::<f64>();
-        let r2 = rng.gen::<f64>();
-        let r3 = rng.gen::<f64>();
+    pub fn random(rng: &mut ThreadRng) -> Self {
+        let r1 = rng.gen::<Float>();
+        let r2 = rng.gen::<Float>();
+        let r3 = rng.gen::<Float>();
         Self::new(r1, r2, r3)
     }
 
-    pub fn random_in_unit_sphere() -> Self {
+    pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Self {
         loop {
-            let p = Self::random() * 2.0 - Self::new(1.0, 1.0, 1.0);
+            let p = Self::random(rng) * 2.0 - Self::new(1.0, 1.0, 1.0);
             if p.length_squared() < 1.0 {
                 break p;
             }
         }
     }
 
-    pub fn random_unit_vector() -> Self {
-        Self::random_in_unit_sphere().unit_vector()
+    pub fn random_unit_vector(rng: &mut ThreadRng) -> Self {
+        Self::random_in_unit_sphere(rng).unit_vector()
     }
 
     pub fn sqrt(self) -> Self {
@@ -77,12 +78,12 @@ impl Vec3 {
     }
 
     pub fn near_zero(&self) -> bool {
-        const EPSILON: f64 = 0.000_000_1;
+        const EPSILON: Float = 0.000_000_1;
         self.e[0].abs() < EPSILON && self.e[1].abs() < EPSILON && self.e[2].abs() < EPSILON
     }
 
-    pub fn dot(self, other: Self) -> f64 {
-        self.e.into_iter().zip(other.e).map(|(a, b)| a * b).sum()
+    pub fn dot(self, other: Self) -> Float {
+        self.e[2].mul_add(other.e[2], self.e[0].mul_add(other.e[0], self.e[1] * other.e[1]))
     }
 
     pub fn cross(self, other: Self) -> Self {
@@ -99,24 +100,24 @@ impl Vec3 {
         self - 2.0 * Self::dot(self, other) * other
     }
 
-    pub fn refract(self, other: Self, etai_over_etat: f64) -> Self {
-        let cos_theta = f64::min(Self::dot(-self, other), 1.0);
+    pub fn refract(self, other: Self, etai_over_etat: Float) -> Self {
+        let cos_theta = Float::min(Self::dot(-self, other), 1.0);
         let r_out_perp = etai_over_etat * (self + cos_theta * other);
-        let r_out_parallel = -f64::sqrt(f64::abs(1.0 - r_out_perp.length_squared())) * other;
+        let r_out_parallel = -Float::sqrt(Float::abs(1.0 - r_out_perp.length_squared())) * other;
         r_out_perp + r_out_parallel
     }
 }
 
 impl Index<usize> for Vec3 {
-    type Output = f64;
+    type Output = Float;
 
-    fn index(&self, i: usize) -> &f64 {
+    fn index(&self, i: usize) -> &Float {
         &self.e[i]
     }
 }
 
 impl IndexMut<usize> for Vec3 {
-    fn index_mut(&mut self, i: usize) -> &mut f64 {
+    fn index_mut(&mut self, i: usize) -> &mut Float {
         &mut self.e[i]
     }
 }
@@ -157,15 +158,15 @@ impl SubAssign for Vec3 {
     }
 }
 
-impl Mul<f64> for Vec3 {
+impl Mul<Float> for Vec3 {
     type Output = Self;
 
-    fn mul(self, other: f64) -> Self {
+    fn mul(self, other: Float) -> Self {
         Self { e: [self.e[0] * other, self.e[1] * other, self.e[2] * other] }
     }
 }
 
-impl Mul<Vec3> for f64 {
+impl Mul<Vec3> for Float {
     type Output = Vec3;
 
     fn mul(self, other: Vec3) -> Vec3 {
@@ -173,8 +174,8 @@ impl Mul<Vec3> for f64 {
     }
 }
 
-impl MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, other: f64) {
+impl MulAssign<Float> for Vec3 {
+    fn mul_assign(&mut self, other: Float) {
         *self = *self * other;
     }
 }
@@ -187,16 +188,16 @@ impl Mul<Self> for Vec3 {
     }
 }
 
-impl Div<f64> for Vec3 {
+impl Div<Float> for Vec3 {
     type Output = Self;
 
-    fn div(self, other: f64) -> Self {
+    fn div(self, other: Float) -> Self {
         self * (1.0 / other)
     }
 }
 
-impl DivAssign<f64> for Vec3 {
-    fn div_assign(&mut self, other: f64) {
+impl DivAssign<Float> for Vec3 {
+    fn div_assign(&mut self, other: Float) {
         *self = *self / other;
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     hittable::{HitRecord, Hittable},
-    ray::Ray,
+    ray::Ray, Float,
 };
 
 pub struct HittableVec<'a> {
@@ -18,7 +18,7 @@ impl<'a> HittableVec<'a> {
 }
 
 impl<'a> Hittable for HittableVec<'a> {
-    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+    fn hit(&self, r: &Ray, t_min: Float, t_max: Float) -> Option<HitRecord> {
         let mut hit_anything = None;
         let mut closest_so_far = t_max;
 

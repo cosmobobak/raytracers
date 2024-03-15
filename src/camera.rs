@@ -1,6 +1,6 @@
 use crate::{
     ray::Ray,
-    vec::{Point3, Vec3},
+    vec::{Point3, Vec3}, Float,
 };
 
 pub struct Camera {
@@ -25,7 +25,7 @@ impl Camera {
         Self { origin, lower_left_corner, horizontal, vertical }
     }
 
-    pub fn get_ray(&self, u: f64, v: f64) -> Ray {
+    pub fn get_ray(&self, u: Float, v: Float) -> Ray {
         Ray::new(self.origin, self.lower_left_corner + u * self.horizontal + v * self.vertical - self.origin)
     }
 }

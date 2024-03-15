@@ -6,5 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+crossbeam = { version = "0.8.4", features = ["crossbeam-channel"] }
 rand = "0.8.4"
 rayon = "1.5"
+
+[profile.release]
+debug = true
+panic = "abort"

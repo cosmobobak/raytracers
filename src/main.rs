@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 use hittable::Hittable;
-use rayon::prelude::*;
+use rand::{rngs::ThreadRng, Rng};
 use std::io::Write;
 
 use crate::{
@@ -10,7 +10,6 @@ use crate::{
     hittable_collection::HittableVec,
     material::{Lambertian, Metal},
     ray::Ray,
-    rtweekend::random_f64,
     sphere::Sphere,
     vec::{Color, Point3},
 };
@@ -25,17 +24,19 @@ mod rtweekend;
 mod sphere;
 mod vec;
 
-fn ray_color(r: &Ray, world: &impl Hittable, depth: usize) -> Color {
-    const SPHERE_COEFF: f64 = 0.5;
+type Float = f32;
+
+fn ray_color(r: &Ray, world: &impl Hittable, depth: usize, rng: &mut ThreadRng) -> Color {
+    const SPHERE_COEFF: Float = 0.5;
 
     // If we've hit the ray bounce limit, no more light is gathered.
     if depth == 0 {
         return Color::new(0.0, 0.0, 0.0);
     }
 
-    if let Some(rec) = world.hit(r, 0.001, f64::INFINITY) {
-        if let Some((scattered, attenuation)) = rec.material.scatter(r, &rec) {
-            return attenuation * ray_color(&scattered, world, depth - 1);
+    if let Some(rec) = world.hit(r, 0.001, Float::INFINITY) {
+        if let Some((scattered, attenuation)) = rec.material.scatter(r, &rec, rng) {
+            return attenuation * ray_color(&scattered, world, depth - 1, rng);
         }
         return Color::new(0.0, 0.0, 0.0);
     }
@@ -49,8 +50,8 @@ fn main() {
     // Image
     let aspect_ratio = 16.0 / 9.0;
     let image_width = 800;
-    #[allow(clippy::cast_possible_truncation)]
-    let image_height = (f64::from(image_width) / aspect_ratio) as i32;
+    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+    let image_height = ((image_width as Float) / aspect_ratio) as i32;
     let samples_per_pixel = 1000;
     let max_ray_bounces = 50;
 
@@ -81,22 +82,64 @@ fn main() {
 
     writeln!(&mut out, "P3\n{image_width} {image_height}\n255").expect("write to stream failed");
 
-    for j in (0..image_height).rev() {
-        print!("\rScanlines remaining: {j:05}");
-        for i in 0..image_width {
-            let pixel_color = (0..samples_per_pixel)
-                .into_par_iter()
-                .map(|_| {
-                    let u = (f64::from(i) + random_f64()) / f64::from(image_width - 1);
-                    let v = (f64::from(j) + random_f64()) / f64::from(image_height - 1);
-                    let r = camera.get_ray(u, v);
-                    ray_color(&r, world, max_ray_bounces)
-                })
-                .sum();
-
-            color::write(&mut out, pixel_color, samples_per_pixel);
+    let camera = &camera;
+    std::thread::scope(move |s| {
+        let mut threads = Vec::new();
+        let mut senders = Vec::new();
+        let mut receivers = Vec::new();
+        let samples_per_thread = samples_per_pixel as usize / std::thread::available_parallelism().unwrap().get();
+        for _ in 0..std::thread::available_parallelism().unwrap().get() {
+            let (work_sender, work_receiver) = crossbeam::channel::bounded(0);
+            let (result_sender, result_receiver) = crossbeam::channel::bounded(0);
+            senders.push(work_sender);
+            receivers.push(result_receiver);
+            threads.push(s.spawn(move || {
+                let mut rng = rand::thread_rng();
+                while let Ok((i, j)) = work_receiver.recv() {
+                    #[allow(clippy::cast_precision_loss)]
+                    let pixel_color = (0..samples_per_thread)
+                        .map(|_| {
+                            let u = (i as Float + rng.gen::<Float>()) / (image_width - 1) as Float;
+                            let v = (j as Float + rng.gen::<Float>()) / (image_height - 1) as Float;
+                            let r = camera.get_ray(u, v);
+                            ray_color(&r, world, max_ray_bounces, &mut rng)
+                        })
+                        .sum();
+                    result_sender.send((i, j, pixel_color)).unwrap();
+                }
+            }));
         }
-    }
 
-    print!("\nDone.\n");
+        for j in (0..image_height).rev() {
+            print!("\rScanlines remaining: {j:05}");
+            for i in 0..image_width {
+                for sender in &senders {
+                    sender.send((i, j)).unwrap();
+                }
+
+                let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+
+                for receiver in &receivers {
+                    let (_i, _j, color) = receiver.recv().unwrap();
+                    pixel_color += color;
+                }
+
+                color::write(&mut out, pixel_color, samples_per_pixel);
+            }
+        }
+
+        print!("\nDone.\n");
+
+        for sender in senders {
+            drop(sender);
+        }
+
+        for receiver in receivers {
+            drop(receiver);
+        }
+
+        for thread in threads {
+            thread.join().unwrap();
+        }
+    });
 }
