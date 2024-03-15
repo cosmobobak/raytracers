@@ -88,9 +88,9 @@ impl Vec3 {
     pub fn cross(self, other: Self) -> Self {
         Self {
             e: [
-                self[1] * other[2] - self[2] * other[1],
-                self[2] * other[0] - self[0] * other[2],
-                self[0] * other[1] - self[1] * other[0],
+                self[1].mul_add(other[2], -(self[2] * other[1])),
+                self[2].mul_add(other[0], -(self[0] * other[2])),
+                self[0].mul_add(other[1], -(self[1] * other[0])),
             ],
         }
     }

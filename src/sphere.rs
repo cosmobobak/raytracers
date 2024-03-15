@@ -26,10 +26,10 @@ impl<'a> Hittable for Sphere<'a> {
         let oc = r.origin() - self.center;
         let a = r.direction().length_squared();
         let half_b = Vec3::dot(oc, r.direction());
-        let c = oc.length_squared() - self.radius * self.radius;
+        let c = self.radius.mul_add(-self.radius, oc.length_squared());
 
         #[allow(clippy::suspicious_operation_groupings)]
-        let discriminant = half_b * half_b - a * c;
+        let discriminant = half_b.mul_add(half_b, -(a * c));
         if discriminant < 0.0 {
             return None;
         }

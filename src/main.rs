@@ -103,11 +103,11 @@ fn main() {
     let outfile = std::fs::File::create("out.ppm").unwrap();
     let mut out = std::io::BufWriter::new(outfile);
 
-    writeln!(&mut out, "P3\n{} {}\n255", image_width, image_height)
+    writeln!(&mut out, "P3\n{image_width} {image_height}\n255")
         .expect("write to stream failed");
 
     for j in (0..image_height).rev() {
-        print!("\rScanlines remaining: {:05}", j);
+        print!("\rScanlines remaining: {j:05}");
         for i in 0..image_width {
             let pixel_color = (0..samples_per_pixel)
                 .into_par_iter()
